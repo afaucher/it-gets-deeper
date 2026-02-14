@@ -39,7 +39,7 @@ static func create_chain(parent: Node3D, start_pos: Vector3, direction: Vector3,
 		
 		# Calculate global position correctly based on current parent orientation
 		body.global_position = parent.global_position + (parent.global_transform.basis * pos)
-		body.gravity_scale = 0.0
+		body.gravity_scale = 2.0 # Increased gravity for better weight
 		body.mass = 0.5 * (1.0 - t * 0.5) # Taper mass
 		
 		# Disable collision with main body to prevent "explosion"
@@ -69,17 +69,35 @@ static func create_chain(parent: Node3D, start_pos: Vector3, direction: Vector3,
 			body.look_at(body.global_position + global_dir, parent.global_transform.basis.y)
 			body.rotate_object_local(Vector3.RIGHT, deg_to_rad(90))
 		
-		# Joint - Use PinJoint3D for all segments for max stability/no gaps
-		var joint = PinJoint3D.new()
+		# Joint - Use Generic6DOF but leave linear limits OFF (behave like PinJoint linearly)
+		var joint = Generic6DOFJoint3D.new()
 		parent.add_child(joint)
 		joint.global_position = body.global_position - global_dir * (segment_len * 0.5)
 		
 		joint.node_a = prev_body.get_path()
 		joint.node_b = body.get_path()
 		
-		# PinJoint3D properties in Godot 4: 
-		# We can set impulsiveness or softness if needed, but defaults are usually stable.
-		# Note: PinJoints are ball-and-socket (limp), no angular limits.
+		# Config Angular Resistance
+		# Even for "limp" tentacles (stiffness 0), we add some damping to prevent infinite wiggling
+		for axis in ["x", "y", "z"]:
+			# Enable angular limits
+			joint.set("flag_enable_angular_limit_" + axis, true)
+			
+			if stiffness > 0.8:
+				# Rigid / Robotic
+				joint.set("param_angular_lower_limit_" + axis, 0.0)
+				joint.set("param_angular_upper_limit_" + axis, 0.0)
+				joint.set("param_angular_limit_softness_" + axis, 0.01)
+			else:
+				# Flexible / Tentacle
+				var limit = deg_to_rad(45 + (1.0 - stiffness) * 45)
+				joint.set("param_angular_lower_limit_" + axis, -limit)
+				joint.set("param_angular_upper_limit_" + axis, limit)
+				
+				# Add spring-like resistance
+				joint.set("flag_enable_angular_spring_" + axis, true)
+				joint.set("param_angular_spring_stiffness_" + axis, stiffness * 10.0 + 1.0)
+				joint.set("param_angular_spring_damping_" + axis, 0.5 + stiffness * 2.0)
 			
 		bodies.append(body)
 		prev_body = body
