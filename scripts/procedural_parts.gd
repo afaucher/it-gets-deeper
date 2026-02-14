@@ -97,7 +97,7 @@ static func create_chain(parent: Node3D, start_pos: Vector3, direction: Vector3,
 				# Add spring-like resistance
 				joint.set("flag_enable_angular_spring_" + axis, true)
 				joint.set("param_angular_spring_stiffness_" + axis, stiffness * 10.0 + 1.0)
-				joint.set("param_angular_spring_damping_" + axis, 0.5 + stiffness * 2.0)
+				joint.set("param_angular_spring_damping_" + axis, (0.5 + stiffness * 2.0) * 0.7)
 			
 		bodies.append(body)
 		prev_body = body
