@@ -69,37 +69,17 @@ static func create_chain(parent: Node3D, start_pos: Vector3, direction: Vector3,
 			body.look_at(body.global_position + global_dir, parent.global_transform.basis.y)
 			body.rotate_object_local(Vector3.RIGHT, deg_to_rad(90))
 		
-		# Joint
-		var joint: Joint3D
-		if i == 0:
-			joint = PinJoint3D.new()
-		else:
-			joint = Generic6DOFJoint3D.new()
-			
+		# Joint - Use PinJoint3D for all segments for max stability/no gaps
+		var joint = PinJoint3D.new()
 		parent.add_child(joint)
 		joint.global_position = body.global_position - global_dir * (segment_len * 0.5)
 		
 		joint.node_a = prev_body.get_path()
 		joint.node_b = body.get_path()
-			
-		# Config Joint
-		if joint is Generic6DOFJoint3D:
-			# Only limit rotation, let linear stay "connected" naturally
-			joint.set_flag_x(Generic6DOFJoint3D.FLAG_ENABLE_ANGULAR_LIMIT, true)
-			joint.set_flag_y(Generic6DOFJoint3D.FLAG_ENABLE_ANGULAR_LIMIT, true)
-			joint.set_flag_z(Generic6DOFJoint3D.FLAG_ENABLE_ANGULAR_LIMIT, true)
-			
-			if stiffness > 0.8:
-				joint.set_param_x(Generic6DOFJoint3D.PARAM_ANGULAR_LOWER_LIMIT, 0.0)
-				joint.set_param_x(Generic6DOFJoint3D.PARAM_ANGULAR_UPPER_LIMIT, 0.0)
-				joint.set_param_y(Generic6DOFJoint3D.PARAM_ANGULAR_LOWER_LIMIT, 0.0)
-				joint.set_param_y(Generic6DOFJoint3D.PARAM_ANGULAR_UPPER_LIMIT, 0.0)
-				joint.set_param_z(Generic6DOFJoint3D.PARAM_ANGULAR_LOWER_LIMIT, 0.0)
-				joint.set_param_z(Generic6DOFJoint3D.PARAM_ANGULAR_UPPER_LIMIT, 0.0)
-			else:
-				var limit = deg_to_rad(45)
-				joint.set_param_x(Generic6DOFJoint3D.PARAM_ANGULAR_LOWER_LIMIT, -limit)
-				joint.set_param_x(Generic6DOFJoint3D.PARAM_ANGULAR_UPPER_LIMIT, limit)
+		
+		# PinJoint3D properties in Godot 4: 
+		# We can set impulsiveness or softness if needed, but defaults are usually stable.
+		# Note: PinJoints are ball-and-socket (limp), no angular limits.
 			
 		bodies.append(body)
 		prev_body = body
