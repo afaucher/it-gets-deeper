@@ -38,9 +38,9 @@ static func create_chain(parent: Node3D, start_pos: Vector3, direction: Vector3,
 		body.top_level = true # Prevent double-transform from parent movement
 		
 		# Calculate global position correctly based on current parent orientation
-		body.global_position = parent.global_transform * pos
+		body.global_position = parent.global_position + (parent.global_transform.basis * pos)
 		body.gravity_scale = 0.0
-		body.mass = 0.1 # Lower mass for limbs makes joints more stable against kinematic parents
+		body.mass = 0.5 * (1.0 - t * 0.5) # Taper mass
 		
 		# Disable collision with main body to prevent "explosion"
 		if parent is CollisionObject3D:
@@ -70,53 +70,36 @@ static func create_chain(parent: Node3D, start_pos: Vector3, direction: Vector3,
 			body.rotate_object_local(Vector3.RIGHT, deg_to_rad(90))
 		
 		# Joint
-		var joint = Generic6DOFJoint3D.new()
+		var joint: Joint3D
+		if i == 0:
+			joint = PinJoint3D.new()
+		else:
+			joint = Generic6DOFJoint3D.new()
+			
 		parent.add_child(joint)
-		# Set top_level on joint too? Or just global_position.
-		# Joint inherits parent transform if not top_level. 
-		# If we set global_position, it should work.
 		joint.global_position = body.global_position - global_dir * (segment_len * 0.5)
 		
 		joint.node_a = prev_body.get_path()
 		joint.node_b = body.get_path()
 			
-		# Config Joint - STIFF ATTACHMENT
-		# Ensure they don't drift linearly (stretching)
-		for axis in [Generic6DOFJoint3D.FLAG_ENABLE_LINEAR_LIMIT]:
-			joint.set_flag_x(axis, true)
-			joint.set_flag_y(axis, true)
-			joint.set_flag_z(axis, true)
-		
-		# Set linear limits to 0 for point-to-point lock
-		for param in [Generic6DOFJoint3D.PARAM_LINEAR_LOWER_LIMIT, Generic6DOFJoint3D.PARAM_LINEAR_UPPER_LIMIT]:
-			joint.set_param_x(param, 0.0)
-			joint.set_param_y(param, 0.0)
-			joint.set_param_z(param, 0.0)
-			
-		# Reduce softness and increase restitution for "hard" attachment
-		for param in [Generic6DOFJoint3D.PARAM_LINEAR_LIMIT_SOFTNESS, Generic6DOFJoint3D.PARAM_ANGULAR_LIMIT_SOFTNESS]:
-			joint.set_param_x(param, 0.01)
-			joint.set_param_y(param, 0.01)
-			joint.set_param_z(param, 0.01)
-
-		# Config Angular Limits based on stiffness
-		if stiffness > 0.8:
-			# Fixed / Rigid Limb
+		# Config Joint
+		if joint is Generic6DOFJoint3D:
+			# Only limit rotation, let linear stay "connected" naturally
 			joint.set_flag_x(Generic6DOFJoint3D.FLAG_ENABLE_ANGULAR_LIMIT, true)
 			joint.set_flag_y(Generic6DOFJoint3D.FLAG_ENABLE_ANGULAR_LIMIT, true)
 			joint.set_flag_z(Generic6DOFJoint3D.FLAG_ENABLE_ANGULAR_LIMIT, true)
 			
-			joint.set_param_x(Generic6DOFJoint3D.PARAM_ANGULAR_LOWER_LIMIT, 0.0)
-			joint.set_param_x(Generic6DOFJoint3D.PARAM_ANGULAR_UPPER_LIMIT, 0.0)
-			joint.set_param_y(Generic6DOFJoint3D.PARAM_ANGULAR_LOWER_LIMIT, 0.0)
-			joint.set_param_y(Generic6DOFJoint3D.PARAM_ANGULAR_UPPER_LIMIT, 0.0)
-			joint.set_param_z(Generic6DOFJoint3D.PARAM_ANGULAR_LOWER_LIMIT, 0.0)
-			joint.set_param_z(Generic6DOFJoint3D.PARAM_ANGULAR_UPPER_LIMIT, 0.0)
-		else:
-			# Loose / Tentacle
-			joint.set_flag_x(Generic6DOFJoint3D.FLAG_ENABLE_ANGULAR_LIMIT, true)
-			joint.set_param_x(Generic6DOFJoint3D.PARAM_ANGULAR_LOWER_LIMIT, deg_to_rad(-60))
-			joint.set_param_x(Generic6DOFJoint3D.PARAM_ANGULAR_UPPER_LIMIT, deg_to_rad(60))
+			if stiffness > 0.8:
+				joint.set_param_x(Generic6DOFJoint3D.PARAM_ANGULAR_LOWER_LIMIT, 0.0)
+				joint.set_param_x(Generic6DOFJoint3D.PARAM_ANGULAR_UPPER_LIMIT, 0.0)
+				joint.set_param_y(Generic6DOFJoint3D.PARAM_ANGULAR_LOWER_LIMIT, 0.0)
+				joint.set_param_y(Generic6DOFJoint3D.PARAM_ANGULAR_UPPER_LIMIT, 0.0)
+				joint.set_param_z(Generic6DOFJoint3D.PARAM_ANGULAR_LOWER_LIMIT, 0.0)
+				joint.set_param_z(Generic6DOFJoint3D.PARAM_ANGULAR_UPPER_LIMIT, 0.0)
+			else:
+				var limit = deg_to_rad(45)
+				joint.set_param_x(Generic6DOFJoint3D.PARAM_ANGULAR_LOWER_LIMIT, -limit)
+				joint.set_param_x(Generic6DOFJoint3D.PARAM_ANGULAR_UPPER_LIMIT, limit)
 			
 		bodies.append(body)
 		prev_body = body

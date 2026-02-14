@@ -108,7 +108,7 @@ func generate_visuals():
 				var _chain = ProceduralParts.create_chain(self, pos, dir, 3.0, 4, 0.9, 0.3)
 			)
 
-func _physics_process(delta):
+func _process(delta):
 	# Only manual move if alive (frozen physics)
 	if !freeze: return
 	
