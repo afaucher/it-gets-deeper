@@ -16,3 +16,9 @@ mono_crash_*.log
 external/
 logs/
 bin/
+docs/screenshots/
+*.png
+*.jpg
+*.jpeg
+*.tscn.uid
+*.gd.uid
