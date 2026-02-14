@@ -50,65 +50,65 @@ func generate_visuals():
 		Pattern.SINE: # Jellyfish
 			# Central Sphere
 			var mesh = SphereMesh.new()
-			mesh.radius = 1.0
-			mesh.height = 2.0
+			mesh.radius = 1.5 # 1.0 * 1.5
+			mesh.height = 3.0 # 2.0 * 1.5
 			ProceduralParts.create_mesh(self, mesh, mat)
 			
 			# Radial Tentacles
-			ProceduralParts.create_radial_symmetry(6, 0.8, func(pos, _angle):
+			ProceduralParts.create_radial_symmetry(6, 1.2, func(pos, _angle):
 				# Start pos relative to center
-				var start = pos + Vector3(0, -0.5, 0)
+				var start = pos + Vector3(0, -0.75, 0)
 				# Spread out slightly
 				var dir = (pos + Vector3(0, -2, 0)).normalized() 
-				ProceduralParts.create_chain(self, start, dir, 3.0, 5, 0.1, 0.15)
+				ProceduralParts.create_chain(self, start, dir, 4.5, 6, 0.1, 0.2) # Increased length/segments/thickness
 			)
 			
-		Pattern.ZIGZAG: # Urchin
+		Pattern.ZIGZAG: # Urchin / Starfish
 			# Central Prism/Ico
 			var mesh = PrismMesh.new()
-			mesh.size = Vector3(2, 2, 2)
+			mesh.size = Vector3(3, 3, 3) # 2 * 1.5
 			ProceduralParts.create_mesh(self, mesh, mat)
 			
-			# Spikes (Rigid chains)
-			ProceduralParts.create_radial_symmetry(8, 0.5, func(pos, _angle):
+			# Spikes radiating in XY plane (Side view)
+			ProceduralParts.create_radial_symmetry(8, 0.75, func(pos, _angle):
 				var dir = pos.normalized()
-				var start = dir * 1.0
-				ProceduralParts.create_chain(self, start, dir, 2.0, 2, 1.0, 0.2)
-			)
+				var start = dir * 1.5
+				ProceduralParts.create_chain(self, start, dir, 3.0, 3, 1.0, 0.3)
+			, Vector3.FORWARD) # Use FORWARD axis for XY plane symmetry
 			
 		Pattern.STOP_GO: # Beetle
 			# Central Box
 			var mesh = BoxMesh.new()
-			mesh.size = Vector3(1.5, 1.0, 2.0)
+			mesh.size = Vector3(2.25, 1.5, 3.0) # 1.5 * 1.5 ...
 			ProceduralParts.create_mesh(self, mesh, mat)
 			
 			# Horizontal Legs
 			# Side Left
-			for z in [-0.5, 0.5]:
-				ProceduralParts.create_chain(self, Vector3(-0.8, 0, z), Vector3(-1, -0.5, 0).normalized(), 1.5, 3, 0.5, 0.15)
+			for z in [-0.75, 0.75]:
+				ProceduralParts.create_chain(self, Vector3(-1.2, 0, z), Vector3(-1, -0.5, 0).normalized(), 2.25, 3, 0.5, 0.2)
 			# Side Right
-			for z in [-0.5, 0.5]:
-				ProceduralParts.create_chain(self, Vector3(0.8, 0, z), Vector3(1, -0.5, 0).normalized(), 1.5, 3, 0.5, 0.15)
+			for z in [-0.75, 0.75]:
+				ProceduralParts.create_chain(self, Vector3(1.2, 0, z), Vector3(1, -0.5, 0).normalized(), 2.25, 3, 0.5, 0.2)
 
 		Pattern.ROBOTIC: # Construct
 			# Torus
 			var mesh = TorusMesh.new()
-			mesh.outer_radius = 1.0
-			mesh.inner_radius = 0.6
+			mesh.outer_radius = 1.5
+			mesh.inner_radius = 0.9
 			ProceduralParts.create_mesh(self, mesh, mat)
 			
 			# Central Core
 			var cyl = CylinderMesh.new()
-			cyl.top_radius = 0.4; cyl.bottom_radius = 0.4; cyl.height = 2.5
+			cyl.top_radius = 0.6; cyl.bottom_radius = 0.6; cyl.height = 3.75
 			ProceduralParts.create_mesh(self, cyl, mat)
 			
-			# Fractal Arms?
-			ProceduralParts.create_radial_symmetry(3, 1.0, func(pos, _angle):
+			# Fractal Arms
+			ProceduralParts.create_radial_symmetry(3, 1.5, func(pos, _angle):
 				var dir = pos.normalized()
-				var _chain = ProceduralParts.create_chain(self, pos, dir, 2.0, 3, 0.9, 0.2)
+				var _chain = ProceduralParts.create_chain(self, pos, dir, 3.0, 4, 0.9, 0.3)
 			)
 
-func _process(delta):
+func _physics_process(delta):
 	# Only manual move if alive (frozen physics)
 	if !freeze: return
 	
