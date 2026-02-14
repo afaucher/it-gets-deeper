@@ -27,6 +27,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		get_tree().quit()
 
 func _ready():
+	add_to_group("player")
 	current_ammo = max_ammo
 	var mesh_instance = $MeshInstance3D
 	if mesh_instance:

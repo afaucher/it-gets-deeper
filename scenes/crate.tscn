@@ -1,5 +1,7 @@
 [gd_scene load_steps=5 format=3 uid="uid://crate7x4y6z1a"]
 
+[ext_resource type="Script" path="res://scripts/environment_cleanup.gd" id="1_script"]
+
 [ext_resource type="Material" path="res://materials/depth_mat.tres" id="2_mat"]
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_crate"]
@@ -9,6 +11,7 @@ size = Vector3(3, 3, 3)
 size = Vector3(3, 3, 3)
 
 [node name="Crate" type="RigidBody3D"]
+script = ExtResource("1_script")
 mass = 50.0
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="."]

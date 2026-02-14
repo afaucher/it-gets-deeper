@@ -3,7 +3,7 @@ extends Node3D
 @export var player_path: NodePath
 @export var enemy_scene: PackedScene
 @export var spawn_distance: float = 200.0
-@export var wave_interval: float = 50.0 # Distance between waves
+@export var wave_interval: float = 80.0 # Distance between waves (was 50)
 @export var min_rows: int = 1
 @export var max_rows: int = 3
 @export var min_cols: int = 1
@@ -17,7 +17,7 @@ var player: Node3D
 var next_spawn_z: float = 50.0
 # Separate trackers for objects
 var next_object_z: float = 50.0
-var object_interval: float = 50.0 # Increased frequency (was 100)
+var object_interval: float = 100.0 # Reduced frequency (was 50)
 
 func _ready():
 	if player_path:
