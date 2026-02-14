@@ -10,6 +10,8 @@ radius = 0.5
 height = 1.0
 
 [node name="Projectile" type="Area3D"]
+collision_layer = 8
+collision_mask = 5
 script = ExtResource("1_proj")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="."]

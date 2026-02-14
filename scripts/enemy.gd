@@ -8,9 +8,9 @@ extends RigidBody3D
 var start_pos: Vector3
 var time_alive: float = 0.0
 
-var health: float = 30.0
+var health: float = 10.0
 
-enum Pattern { SINE, ZIGZAG, STOP_GO, ROBOTIC }
+enum Pattern { SINE, ZIGZAG, STOP_GO, ROBOTIC, SNAKE }
 @export var current_pattern: Pattern = Pattern.SINE
 @export var randomize_pattern: bool = true
 var pattern_timer: float = 0.0
@@ -107,6 +107,19 @@ func generate_visuals():
 				var dir = pos.normalized()
 				var _chain = ProceduralParts.create_chain(self, pos, dir, 3.0, 4, 0.4, 0.3) # Reduced stiffness 0.9 -> 0.4
 			)
+			
+		Pattern.SNAKE: # Serpentine
+			# Large Head
+			var head = SphereMesh.new()
+			head.radius = 2.0
+			head.height = 4.0
+			ProceduralParts.create_mesh(self, head, mat)
+			
+			# Long, thick tail
+			var start = Vector3(0, 0, 1.5) # Slight back offset
+			var dir = Vector3.BACK # Fire tail backwards
+			# Length 15m, 10 segments, stiffness 0.1 (floppy), thickness 0.8
+			ProceduralParts.create_chain(self, start, dir, 15.0, 10, 0.1, 0.8)
 
 func _process(delta):
 	# Only manual move if alive (frozen physics)
@@ -177,6 +190,11 @@ func _process(delta):
 			
 			x_offset = lerp(start_x, target_x, step_phase)
 			y_offset = lerp(start_y, target_y, step_phase)
+			
+		Pattern.SNAKE:
+			# Extra wide slither
+			x_offset = sin(time_alive * 1.5) * (sway_distance * 2.0)
+			y_offset = cos(time_alive * 0.7) * (sway_distance * 1.5)
 	
 	# Manual movement while alive/frozen
 	var new_pos = global_position
@@ -200,7 +218,17 @@ func take_damage(amount: float, source_pos: Vector3 = Vector3.ZERO):
 	if health <= 0:
 		die(source_pos)
 
+var is_dead: bool = false
+
 func die(source_pos: Vector3):
+	if is_dead: return
+	is_dead = true
+	
+	# Award points
+	var p = get_tree().get_first_node_in_group("player")
+	if p and p.has_method("add_score"):
+		p.add_score(100)
+		
 	# Ragdoll mode
 	freeze = false
 	gravity_scale = 1.0
@@ -208,6 +236,20 @@ func die(source_pos: Vector3):
 	axis_lock_angular_x = false
 	axis_lock_angular_z = false
 	
+	# 5% chance of some limbs falling off
+	if randf() < 0.05:
+		var root_joints = []
+		for child in get_children():
+			if child is Joint3D and child.is_in_group("root_joints"):
+				root_joints.append(child)
+		
+		if root_joints.size() > 0:
+			root_joints.shuffle()
+			# Detach 1 to half of limbs
+			var detach_count = randi_range(1, clampi(root_joints.size() / 2, 1, root_joints.size()))
+			for i in range(detach_count):
+				root_joints[i].queue_free()
+
 	# Apply impulse away from source
 	if source_pos != Vector3.ZERO:
 		var dir = (global_position - source_pos).normalized()

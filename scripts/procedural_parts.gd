@@ -42,6 +42,11 @@ static func create_chain(parent: Node3D, start_pos: Vector3, direction: Vector3,
 		body.gravity_scale = 2.0 # Increased gravity for better weight
 		body.mass = 0.5 * (1.0 - t * 0.5) # Taper mass
 		
+		# Collision Layer: Enemy (4)
+		# Collision Mask: World (1) + Player (2) + Enemy (4) = 7
+		body.collision_layer = 4
+		body.collision_mask = 7
+		
 		# Disable collision with main body to prevent "explosion"
 		if parent is CollisionObject3D:
 			body.add_collision_exception_with(parent)
@@ -76,6 +81,10 @@ static func create_chain(parent: Node3D, start_pos: Vector3, direction: Vector3,
 		
 		joint.node_a = prev_body.get_path()
 		joint.node_b = body.get_path()
+		
+		# Tag root joints for potential detachment on death
+		if prev_body == parent:
+			joint.add_to_group("root_joints")
 		
 		# Config Angular Resistance
 		# Even for "limp" tentacles (stiffness 0), we add some damping to prevent infinite wiggling

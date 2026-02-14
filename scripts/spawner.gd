@@ -99,6 +99,16 @@ func spawn_crate():
 		crate.rotation = Vector3(randf()*TAU, randf()*TAU, randf()*TAU)
 
 func spawn_wave():
+	# 10% chance for a solo Snake spawn
+	if randf() < 0.1:
+		var pos = Vector3(0, 0, next_spawn_z)
+		var enemy = enemy_scene.instantiate()
+		get_parent().add_child(enemy)
+		enemy.current_pattern = 4 # SNAKE
+		enemy.randomize_pattern = false
+		enemy.init(pos)
+		return
+
 	var rows = randi_range(min_rows, max_rows)
 	var cols = randi_range(min_cols, max_cols)
 	

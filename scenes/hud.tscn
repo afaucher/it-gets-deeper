@@ -9,6 +9,7 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+mouse_filter = 2
 script = ExtResource("1_hud")
 
 [node name="VBoxContainer" type="VBoxContainer" parent="."]
@@ -17,20 +18,39 @@ offset_left = 20.0
 offset_top = 20.0
 offset_right = 220.0
 offset_bottom = 120.0
+mouse_filter = 2
 
 [node name="DamageLabel" type="Label" parent="VBoxContainer"]
 layout_mode = 2
 text = "Damage: 0%"
+mouse_filter = 2
 
 [node name="ScoreLabel" type="Label" parent="VBoxContainer"]
 layout_mode = 2
 text = "Score: 0"
+mouse_filter = 2
 
-[node name="AmmoLabel" type="Label" parent="VBoxContainer"]
-layout_mode = 2
-text = "Ammo: 100"
 
 [node name="AmmoBar" type="ProgressBar" parent="VBoxContainer"]
 layout_mode = 2
 max_value = 100.0
 value = 100.0
+mouse_filter = 2
+
+[node name="ChokeLabel" type="Label" parent="VBoxContainer"]
+layout_mode = 2
+text = "Spread: 1.0°"
+mouse_filter = 2
+
+[node name="FPSLabel" type="Label" parent="."]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -120.0
+offset_top = 20.0
+offset_right = -20.0
+offset_bottom = 43.0
+grow_horizontal = 0
+text = "FPS: 60"
+horizontal_alignment = 2
