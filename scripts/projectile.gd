@@ -9,7 +9,7 @@ func _ready():
 		mesh.material_override = load("res://materials/depth_mat.tres")
 
 func _process(delta):
-	position += transform.basis.z * speed * delta
+	position -= transform.basis.z * speed * delta
 	
 	life_time -= delta
 	if life_time <= 0:

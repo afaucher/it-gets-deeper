@@ -3,6 +3,7 @@ extends RigidBody3D
 @export var move_speed: float = 10.0
 @export var sway_speed: float = 2.0
 @export var sway_distance: float = 5.0
+@export var showcase_mode: bool = false
 
 var start_pos: Vector3
 var time_alive: float = 0.0
@@ -179,7 +180,8 @@ func _process(delta):
 	
 	# Manual movement while alive/frozen
 	var new_pos = global_position
-	new_pos.z -= z_speed * delta
+	if !showcase_mode:
+		new_pos.z -= z_speed * delta
 	new_pos.x = start_pos.x + x_offset
 	new_pos.y = start_pos.y + y_offset
 	global_position = new_pos

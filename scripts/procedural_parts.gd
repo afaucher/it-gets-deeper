@@ -35,10 +35,15 @@ static func create_chain(parent: Node3D, start_pos: Vector3, direction: Vector3,
 		# Create Body
 		var body = RigidBody3D.new()
 		parent.add_child(body)
-		body.top_level = true # Physical objects shouldn't inherit parent transform
-		body.global_position = parent.global_position + parent.global_transform.basis * pos
+		body.position = pos # Position relative to parent
 		body.gravity_scale = 0.0
 		body.mass = 0.5 * (1.0 - t * 0.5) # Taper mass
+		
+		# Disable collision with main body to prevent "explosion"
+		if parent is CollisionObject3D:
+			body.add_collision_exception_with(parent)
+		if prev_body is CollisionObject3D:
+			body.add_collision_exception_with(prev_body)
 		
 		# Collision
 		var col = CollisionShape3D.new()
