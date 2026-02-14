@@ -110,7 +110,5 @@ func join_bodies(a: RigidBody3D, b: RigidBody3D):
 	joint.global_position = (a.global_position + b.global_position) / 2.0
 	joint.node_a = a.get_path()
 func _process(_delta):
-	var p = get_tree().get_first_node_in_group("player")
-	if p:
-		if global_position.z < p.global_position.z - 100:
-			queue_free()
+	if global_position.z < GlobalStatus.player_z - 100:
+		queue_free()

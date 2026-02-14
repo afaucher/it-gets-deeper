@@ -59,6 +59,10 @@ toggle_debug={
 ]
 }
 
+[autoload]
+
+GlobalStatus="*res://scripts/global_status.gd"
+
 [rendering]
 
 renderer/rendering_method="gl_compatibility"

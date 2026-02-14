@@ -186,12 +186,8 @@ func _process(delta):
 	new_pos.y = start_pos.y + y_offset
 	global_position = new_pos
 	
-	# Cleanup
-	var p = get_tree().get_first_node_in_group("player")
-	if p:
-		if global_position.z < p.global_position.z - 100:
-			queue_free()
-	elif global_position.z < -100: # Fallback
+	# Cleanup - Depth based (independent of groups)
+	if global_position.z < GlobalStatus.player_z - 100:
 		queue_free()
 
 func _on_body_entered(body):
