@@ -22,3 +22,5 @@ docs/screenshots/
 *.jpeg
 *.tscn.uid
 *.gd.uid
+build/
+*.exe

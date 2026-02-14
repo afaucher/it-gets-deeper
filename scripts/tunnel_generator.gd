@@ -1,7 +1,7 @@
 extends Node3D
 
 @export var tunnel_length: int = 2000
-@export var chunk_size: int = 50
+@export var chunk_size: int = 25
 @export var tunnel_radius: float = 20.0
 @export var noise_scale: float = 0.05
 @export var iso_level: float = 0.0
@@ -17,11 +17,26 @@ signal generation_finished
 var EDGE_VERTEX_INDICES = []
 var TRIANGLE_TABLE = []
 
+const CUBE_CORNERS = [
+	Vector3(0, 0, 0), Vector3(1, 0, 0), Vector3(1, 0, 1), Vector3(0, 0, 1),
+	Vector3(0, 1, 0), Vector3(1, 1, 0), Vector3(1, 1, 1), Vector3(0, 1, 1)
+]
+const PROFILING_MODE = false
+
 @export var view_distance: int = 1500 # How far ahead to generate (buffer for pop-in)
 @export var cleanup_distance: int = 300 # How far behind to keep
 
 var _active_chunks = {} # z_start -> MeshInstance3D
 var _generating_chunks = {} # z_start -> bool (true if currently generating)
+
+# Profiling Variables
+var _prof_mutex: Mutex
+var _prof_density_usec: int = 0
+var _prof_mc_usec: int = 0
+var _prof_interp_usec: int = 0
+var _prof_mesh_usec: int = 0
+var _prof_collision_usec: int = 0
+var _prof_total_start_msec: int = 0
 
 var player: Node3D
 
@@ -48,6 +63,7 @@ func get_generating_chunk_count() -> int:
 	return _generating_chunks.size()
 
 func _ready():
+	_prof_mutex = Mutex.new()
 	load_tables()
 
 	noise = FastNoiseLite.new()
@@ -123,6 +139,7 @@ var _finished_chunks: int = 0
 
 func generate_initial_chunks():
 	print("Starting initial generation...")
+	_prof_total_start_msec = Time.get_ticks_msec()
 	var initial_length = 4000 # Preload massive section
 	var chunks_needed = initial_length / chunk_size
 	
@@ -137,23 +154,37 @@ func generate_chunk_threaded(z_start: int):
 	WorkerThreadPool.add_task(Callable(self, "_generate_chunk_task").bind(z_start))
 
 func _generate_chunk_task(z_start: int):
-	var chunk_start = Time.get_ticks_msec()
-	
+	var chunk_prof = {
+		"density": 0,
+		"mc": 0,
+		"interp": 0,
+		"mesh": 0
+	}
+
 	# Create SurfaceTool in thread
 	var st = SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
 	
 	var half_size = 30
-	
+
 	# Generate mesh data
 	for z in range(z_start, z_start + chunk_size, grid_size):
 		for y in range(-half_size, half_size, grid_size):
 			for x in range(-half_size, half_size, grid_size):
-				process_cube(Vector3(x, y, z), st)
+				process_cube(Vector3(x, y, z), st, chunk_prof)
 	
+	var mesh_start = Time.get_ticks_usec()
 	st.index()
 	st.generate_normals()
 	var mesh = st.commit()
+	chunk_prof.mesh += Time.get_ticks_usec() - mesh_start
+	
+	_prof_mutex.lock()
+	_prof_density_usec += chunk_prof.density
+	_prof_mc_usec += chunk_prof.mc
+	_prof_interp_usec += chunk_prof.interp
+	_prof_mesh_usec += chunk_prof.mesh
+	_prof_mutex.unlock()
 	
 	# Defer adding to tree
 	call_deferred("_finalize_chunk", mesh, z_start)
@@ -173,30 +204,43 @@ func _finalize_chunk(mesh: Mesh, z_start: int):
 	
 	add_child(chunk_mesh)
 	chunk_mesh.position = Vector3(0,0,0)
+	
+	var coll_start = Time.get_ticks_usec()
 	chunk_mesh.create_trimesh_collision() # Enable collisions
+	var coll_time = Time.get_ticks_usec() - coll_start
 	
 	_active_chunks[z_start] = chunk_mesh
+	
+	_prof_mutex.lock()
+	_prof_collision_usec += coll_time
+	_prof_mutex.unlock()
 	
 	_finished_chunks += 1
 	# Check if this was part of initial batch
 	if _finished_chunks == _total_chunks:
-		print("Initial chunks complete.")
+		var total_time_msec = Time.get_ticks_msec() - _prof_total_start_msec
+		if PROFILING_MODE:
+			print("\n--- TUNNEL GENERATOR PROFILING REPORT ---")
+			print("Total Loading Time: %d ms" % total_time_msec)
+			print("Time in Density: %d ms" % (_prof_density_usec / 1000))
+			print("Time in Marching Cubes (Logic): %d ms" % (_prof_mc_usec / 1000))
+			print("Time in Interpolation: %d ms" % (_prof_interp_usec / 1000))
+			print("Time in Mesh Finalization (SurfaceTool): %d ms" % (_prof_mesh_usec / 1000))
+			print("Time in Collision Generation: %d ms" % (_prof_collision_usec / 1000))
+			print("-----------------------------------------\n")
+		print("Initial generation complete (%d chunks in %dms)." % [_total_chunks, total_time_msec])
 		generation_finished.emit()
 
 var material_cache: Material
 
-# ... (interpolation logic)
-
-func process_cube(pos: Vector3, st: SurfaceTool):
+func process_cube(pos: Vector3, st: SurfaceTool, prof: Dictionary):
+	var mc_start = Time.get_ticks_usec()
 	var cube_values = []
-	var cube_corners = [
-		Vector3(0, 0, 0), Vector3(1, 0, 0), Vector3(1, 0, 1), Vector3(0, 0, 1),
-		Vector3(0, 1, 0), Vector3(1, 1, 0), Vector3(1, 1, 1), Vector3(0, 1, 1)
-	]
-	
 	for i in range(8):
-		var corner_global = pos + cube_corners[i] * grid_size
+		var den_start = Time.get_ticks_usec()
+		var corner_global = pos + CUBE_CORNERS[i] * grid_size
 		cube_values.append(get_density(corner_global))
+		prof.density += Time.get_ticks_usec() - den_start
 		
 	var cube_index = 0
 	if cube_values[0] < iso_level: cube_index |= 1
@@ -217,28 +261,35 @@ func process_cube(pos: Vector3, st: SurfaceTool):
 		var e2 = edges[i+1]
 		var e3 = edges[i+2]
 		
-		var v1 = interpolate_vertex(pos, cube_corners, cube_values, e1)
-		var v2 = interpolate_vertex(pos, cube_corners, cube_values, e2)
-		var v3 = interpolate_vertex(pos, cube_corners, cube_values, e3)
+		var v1 = interpolate_vertex(pos, cube_values, e1, prof)
+		var v2 = interpolate_vertex(pos, cube_values, e2, prof)
+		var v3 = interpolate_vertex(pos, cube_values, e3, prof)
 		
 		st.add_vertex(v1)
 		st.add_vertex(v2)
 		st.add_vertex(v3)
+	prof.mc += Time.get_ticks_usec() - mc_start
 
-func interpolate_vertex(pos: Vector3, corners: Array, values: Array, edge_index: int) -> Vector3:
+func interpolate_vertex(pos: Vector3, values: Array, edge_index: int, prof: Dictionary) -> Vector3:
+	var interp_start = Time.get_ticks_usec()
 	var v1_idx = EDGE_VERTEX_INDICES[edge_index][0]
 	var v2_idx = EDGE_VERTEX_INDICES[edge_index][1]
 	
-	var p1 = pos + corners[v1_idx] * grid_size
-	var p2 = pos + corners[v2_idx] * grid_size
+	var p1 = pos + CUBE_CORNERS[v1_idx] * grid_size
+	var p2 = pos + CUBE_CORNERS[v2_idx] * grid_size
 	
 	var val1 = values[v1_idx]
 	var val2 = values[v2_idx]
 	
-	if abs(val2 - val1) < 0.00001: return p1
+	if abs(val2 - val1) < 0.00001: 
+		prof.interp += Time.get_ticks_usec() - interp_start
+		return p1
 	
 	var t = (iso_level - val1) / (val2 - val1)
-	return p1.lerp(p2, t)
+	var res = p1.lerp(p2, t)
+	
+	prof.interp += Time.get_ticks_usec() - interp_start
+	return res
 
 func get_density(pos: Vector3) -> float:
 	# 1. Base Tunnel (Cylinder)
@@ -251,49 +302,29 @@ func get_density(pos: Vector3) -> float:
 	base_density += (noise_val1 + noise_val2 * 0.5) * 10.0
 	
 	# 3. Crystals (Cellular Noise)
-	# We want them to protrude from walls.
 	var cry_val = crystal_noise.get_noise_3d(pos.x, pos.y, pos.z)
-	if cry_val > 0.6: # Dense spots
-		# Make density MORE POSITIVE (Solid)
-		# Add a spike
+	if cry_val > 0.6:
 		base_density += (cry_val - 0.6) * 40.0
 		
 	# 4. Obstructions (Pipes/Poles)
-	
-	# Determine "block" for pipes (e.g. every 50 units is a potential slot)
 	var block_size = 50.0
 	var block_idx = floor(pos.z / block_size)
-	
-	# Use noise to check if this block has a pipe cluster
-	# get_noise_1d returns -1 to 1.
-	# We want irregular clusters. 
 	var pipe_seed_val = pipe_noise.get_noise_1d(block_idx * 10.0)
-	
 	var obstruction_val = -100.0
 	
-	if pipe_seed_val > 0.3: # 35% chance of a pipe cluster in this block
-		# Determine if vertical or horizontal
-		# Use a different frequency/seed for orientation
+	if pipe_seed_val > 0.3:
 		var orient_val = pipe_noise.get_noise_1d(block_idx * 50.0 + 1000.0)
 		var radius_val = pipe_noise.get_noise_1d(block_idx * 25.0 + 500.0)
-		
-		# Map radius: -1..1 -> 1.5..4.0
 		var pipe_radius = 1.5 + (radius_val + 1.0) * 1.25
-		
 		var center_z_local = pos.z - (block_idx * block_size + block_size * 0.5)
 		
 		if orient_val > 0.0:
-			# Vertical Pole (Cylinder along Y)
-			# Distance from pole axis (X=0 approx, Z=mid)
-			# Add some jitter to X position?
-			var x_offset = (orient_val - 0.5) * 20.0 # -10 to 10
+			var x_offset = (orient_val - 0.5) * 20.0
 			var pole_dist = sqrt((pos.x - x_offset) * (pos.x - x_offset) + center_z_local * center_z_local)
 			obstruction_val = pipe_radius - pole_dist
 		else:
-			# Horizontal Pipe (Along X)
-			var y_offset = (orient_val + 0.5) * 20.0 # -10 to 10
+			var y_offset = (orient_val + 0.5) * 20.0
 			var pipe_dist = sqrt((pos.y - y_offset) * (pos.y - y_offset) + center_z_local * center_z_local)
 			obstruction_val = pipe_radius - pipe_dist
 
-	# Combine with tunnel (Union)
 	return max(base_density, obstruction_val)
