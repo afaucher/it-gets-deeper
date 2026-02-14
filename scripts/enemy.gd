@@ -60,7 +60,7 @@ func generate_visuals():
 				var start = pos + Vector3(0, -0.75, 0)
 				# Spread out slightly
 				var dir = (pos + Vector3(0, -2, 0)).normalized() 
-				ProceduralParts.create_chain(self, start, dir, 4.5, 6, 0.1, 0.2) # Increased length/segments/thickness
+				ProceduralParts.create_chain(self, start, dir, 4.5, 6, 0.05, 0.2) # Reduced stiffness 0.1 -> 0.05
 			)
 			
 		Pattern.ZIGZAG: # Urchin / Starfish
@@ -85,10 +85,10 @@ func generate_visuals():
 			# Horizontal Legs
 			# Side Left
 			for z in [-0.75, 0.75]:
-				ProceduralParts.create_chain(self, Vector3(-1.2, 0, z), Vector3(-1, -0.5, 0).normalized(), 2.25, 3, 0.5, 0.2)
+				ProceduralParts.create_chain(self, Vector3(-1.2, 0, z), Vector3(-1, -0.5, 0).normalized(), 2.25, 3, 0.2, 0.2) # Reduced stiffness 0.5 -> 0.2
 			# Side Right
 			for z in [-0.75, 0.75]:
-				ProceduralParts.create_chain(self, Vector3(1.2, 0, z), Vector3(1, -0.5, 0).normalized(), 2.25, 3, 0.5, 0.2)
+				ProceduralParts.create_chain(self, Vector3(1.2, 0, z), Vector3(1, -0.5, 0).normalized(), 2.25, 3, 0.2, 0.2) # Reduced stiffness 0.5 -> 0.2
 
 		Pattern.ROBOTIC: # Construct
 			# Torus
@@ -105,7 +105,7 @@ func generate_visuals():
 			# Fractal Arms
 			ProceduralParts.create_radial_symmetry(3, 1.5, func(pos, _angle):
 				var dir = pos.normalized()
-				var _chain = ProceduralParts.create_chain(self, pos, dir, 3.0, 4, 0.9, 0.3)
+				var _chain = ProceduralParts.create_chain(self, pos, dir, 3.0, 4, 0.4, 0.3) # Reduced stiffness 0.9 -> 0.4
 			)
 
 func _process(delta):
