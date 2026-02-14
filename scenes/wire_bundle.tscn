@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3 uid="uid://wire7x4y6z1b"]
+
+[ext_resource type="Script" path="res://scripts/wire_bundle.gd" id="1_wire"]
+
+[node name="WireBundle" type="Node3D"]
+script = ExtResource("1_wire")

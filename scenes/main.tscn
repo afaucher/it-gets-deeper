@@ -1,0 +1,59 @@
+[gd_scene load_steps=11 format=3 uid="uid://b8j5q7x4y6z1"]
+
+[ext_resource type="Script" path="res://scripts/tunnel_generator.gd" id="1_generator"]
+[ext_resource type="PackedScene" uid="uid://c8j5q7x4y6z2" path="res://scenes/player.tscn" id="2_player"]
+[ext_resource type="Script" path="res://scripts/follow_camera.gd" id="3_camera"]
+[ext_resource type="PackedScene" uid="uid://hudxj7x4y6z3" path="res://scenes/hud.tscn" id="4_hud"]
+[ext_resource type="Script" path="res://scripts/spawner.gd" id="5_spawner"]
+[ext_resource type="PackedScene" uid="uid://enemyj7x4y6z4" path="res://scenes/enemy.tscn" id="6_enemy"]
+[ext_resource type="Script" path="res://scripts/debug_visuals.gd" id="7_debug"]
+[ext_resource type="PackedScene" uid="uid://b8q6y4w5e1r2" path="res://scenes/loading_screen.tscn" id="8_loading"]
+[ext_resource type="PackedScene" uid="uid://pp7x4y6z1a2b" path="res://scenes/post_process.tscn" id="9_postprocess"]
+[ext_resource type="PackedScene" uid="uid://crate7x4y6z1a" path="res://scenes/crate.tscn" id="10_crate"]
+[ext_resource type="PackedScene" uid="uid://wire7x4y6z1b" path="res://scenes/wire_bundle.tscn" id="11_wire"]
+
+[sub_resource type="Environment" id="Environment_fog"]
+background_mode = 1
+background_color = Color(0.05, 0.05, 0.1, 1)
+fog_enabled = true
+fog_light_color = Color(0.1, 0.05, 0.2, 1)
+fog_density = 0.02
+fog_aerial_perspective = 0.5
+
+[node name="Main" type="Node3D"]
+
+[node name="TunnelGenerator" type="Node3D" parent="."]
+script = ExtResource("1_generator")
+
+[node name="Player" parent="." instance=ExtResource("2_player")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 10)
+
+[node name="Camera3D" type="Camera3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0.965926, 0.258819, 0, -0.258819, 0.965926, 0, 5, 10)
+script = ExtResource("3_camera")
+target_path = NodePath("../Player")
+
+[node name="PostProcess" parent="Camera3D" instance=ExtResource("9_postprocess")]
+
+[node name="HUD" parent="." instance=ExtResource("4_hud")]
+player_path = NodePath("../Player")
+
+[node name="Spawner" type="Node3D" parent="."]
+script = ExtResource("5_spawner")
+player_path = NodePath("../Player")
+enemy_scene = ExtResource("6_enemy")
+crate_scene = ExtResource("10_crate")
+wire_bundle_scene = ExtResource("11_wire")
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+transform = Transform3D(0.866025, -0.433013, 0.25, 0, 0.5, 0.866025, -0.5, -0.75, 0.433013, 0, 10, 0)
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_fog")
+
+[node name="DebugVisuals" type="Node3D" parent="."]
+script = ExtResource("7_debug")
+
+[node name="LoadingScreen" parent="." instance=ExtResource("8_loading")]
+tunnel_generator_path = NodePath("../TunnelGenerator")
+

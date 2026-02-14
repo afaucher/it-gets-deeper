@@ -1,0 +1,120 @@
+[gd_scene load_steps=6 format=3 uid="uid://showcase7x4y6z"]
+
+[ext_resource type="Script" path="res://scripts/showcase.gd" id="1_script"]
+[ext_resource type="PackedScene" uid="uid://enemyj7x4y6z4" path="res://scenes/enemy.tscn" id="1_enemy"]
+[ext_resource type="PackedScene" uid="uid://pp7x4y6z1a2b" path="res://scenes/post_process.tscn" id="2_pp"]
+[ext_resource type="Material" path="res://materials/depth_mat.tres" id="3_mat"]
+[ext_resource type="PackedScene" uid="uid://crate7x4y6z1a" path="res://scenes/crate.tscn" id="4_crate"]
+
+[sub_resource type="BoxMesh" id="BoxMesh_room"]
+size = Vector3(160, 80, 80)
+flip_faces = true
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_floor"]
+size = Vector3(160, 1, 80)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_wall_z"]
+size = Vector3(160, 80, 1)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_wall_x"]
+size = Vector3(1, 80, 80)
+
+[node name="Showcase" type="Node3D"]
+script = ExtResource("1_script")
+
+[node name="Room" type="MeshInstance3D" parent="."]
+mesh = SubResource("BoxMesh_room")
+material_override = ExtResource("3_mat")
+
+[node name="StaticBody3D" type="StaticBody3D" parent="Room"]
+
+[node name="Collision_Floor" type="CollisionShape3D" parent="Room/StaticBody3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -40, 0)
+shape = SubResource("BoxShape3D_floor")
+
+[node name="Collision_Ceiling" type="CollisionShape3D" parent="Room/StaticBody3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 40, 0)
+shape = SubResource("BoxShape3D_floor")
+
+[node name="Collision_Wall_Back" type="CollisionShape3D" parent="Room/StaticBody3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -40)
+shape = SubResource("BoxShape3D_wall_z")
+
+[node name="Collision_Wall_Front" type="CollisionShape3D" parent="Room/StaticBody3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 40)
+shape = SubResource("BoxShape3D_wall_z")
+
+[node name="Collision_Wall_Left" type="CollisionShape3D" parent="Room/StaticBody3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -80, 0, 0)
+shape = SubResource("BoxShape3D_wall_x")
+
+[node name="Collision_Wall_Right" type="CollisionShape3D" parent="Room/StaticBody3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 80, 0, 0)
+shape = SubResource("BoxShape3D_wall_x")
+
+[node name="Camera3D" type="Camera3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0.984808, 0.173648, 0, -0.173648, 0.984808, 0, 5, 20)
+far = 500.0
+
+[node name="PostProcess" parent="Camera3D" instance=ExtResource("2_pp")]
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+transform = Transform3D(0.866025, -0.433013, 0.25, 0, 0.5, 0.866025, -0.5, -0.75, 0.433013, 0, 30, 0)
+shadow_enabled = true
+
+[node name="SINE_Enemy" parent="." instance=ExtResource("1_enemy")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -45, 0, -20)
+current_pattern = 0
+randomize_pattern = false
+
+[node name="Label3D" type="Label3D" parent="SINE_Enemy"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 6, 0)
+billboard = 1
+text = "SINE (Jellyfish)"
+font_size = 200
+
+[node name="ZIGZAG_Enemy" parent="." instance=ExtResource("1_enemy")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -15, 0, -20)
+current_pattern = 1
+randomize_pattern = false
+
+[node name="Label3D" type="Label3D" parent="ZIGZAG_Enemy"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 6, 0)
+billboard = 1
+text = "ZIGZAG (Urchin)"
+font_size = 200
+
+[node name="STOPGO_Enemy" parent="." instance=ExtResource("1_enemy")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 15, 0, -20)
+current_pattern = 2
+randomize_pattern = false
+
+[node name="Label3D" type="Label3D" parent="STOPGO_Enemy"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 6, 0)
+billboard = 1
+text = "STOP_GO (Beetle)"
+font_size = 200
+
+[node name="ROBOTIC_Enemy" parent="." instance=ExtResource("1_enemy")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 45, 0, -20)
+current_pattern = 3
+randomize_pattern = false
+
+[node name="Label3D" type="Label3D" parent="ROBOTIC_Enemy"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 6, 0)
+billboard = 1
+text = "ROBOTIC (Construct)"
+font_size = 200
+
+# Background Crates
+[node name="Crate1" parent="." instance=ExtResource("4_crate")]
+transform = Transform3D(0.81432, 0.490261, -0.312948, -0.366698, 0.852869, 0.370369, 0.449673, -0.178877, 0.875086, -30, 0, -35)
+
+[node name="Crate2" parent="." instance=ExtResource("4_crate")]
+transform = Transform3D(0.536761, -0.627507, 0.563673, 0.778848, 0.589839, -0.214971, -0.322883, 0.509033, 0.798157, 10, 0, -35)
+
+[node name="Crate3" parent="." instance=ExtResource("4_crate")]
+transform = Transform3D(0.965926, 0, 0.258819, 0, 1, 0, -0.258819, 0, 0.965926, 40, 0, -35)
+
+[node name="Crate4" parent="." instance=ExtResource("4_crate")]
+transform = Transform3D(0.8, -0.6, 0, 0.6, 0.8, 0, 0, 0, 1, -60, 0, -30)
