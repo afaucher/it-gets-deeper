@@ -139,12 +139,12 @@ func _physics_process(delta):
 		# Bounce logic / Knockback
 		# Reduced by 75% (was 50.0) -> 12.5
 		apply_knockback(normal, 12.5)
-		
+		# Penalty
+		damage_level += 5.0 * delta * 10.0
+		damage_changed.emit(damage_level / 100.0)
+	
 	# Update Global Status for cleanup scripts (depth-based)
 	GlobalStatus.player_z = global_position.z
-	
-	damage_level += 5.0 * delta * 10.0
-		damage_changed.emit(damage_level / 100.0)
 
 var knockback_velocity: Vector3
 var knockback_timer: float = 0.0
